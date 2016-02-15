@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Git to Toggl post-commit hook.
+# Created by Denis Jakoša <denisjakosa@gmail.com>
+
+# Add your Toggl API key here
+API_KEY=""
+
+MESSAGE=$(git log -1 HEAD --pretty=format:%s)
+
+if [ -z "$MESSAGE" ]; then
+        echo "Commit has no message!"
+elif [ -z "$API_KEY" ]; then
+	echo "You need to add your Toggl API key to send commit message to current time entry!"
+else
+        echo "Task description for Toggl: $MESSAGE"
+	
+	# Get the running task from Toggl
+	curl -s -u $API_KEY:api_token -X GET https://www.toggl.com/api/v8/time_entries/current -H "Accept: application/json" > gittoggl.json
+	
+	# Get the id of the running task
+	RUNNING_ID=$(cat gittoggl.json | jq '.data.id')
+	#echo "Running task has id $RUNNING_ID"
+	
+	# Append commit message to the description
+	NEW_DESCRIPTION=$(cat gittoggl.json | jq '.data.description' | tr -d '"')
+	NEW_DESCRIPTION="$NEW_DESCRIPTION; $MESSAGE"
+	#echo "New task description: $NEW_DESCRIPTION"	
+	
+	# Remove tmp file
+	rm gittoggl.json	
+
+	# Build JSON for update
+	UPDATED_TIME_ENTRY="$(jq -n --arg ARG "$NEW_DESCRIPTION" '{time_entry: {description: $ARG} }')"
+	#echo "Updated time entry is: '$UPDATED_TIME_ENTRY'"
+	
+	# Update description
+	curl -s -u $API_KEY:api_token \
+   		-H "Content-Type: application/json" \
+    		-d "${UPDATED_TIME_ENTRY}" \
+	    	-X PUT https://www.toggl.com/api/v8/time_entries/$RUNNING_ID > /dev/null	
+fi
