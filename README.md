@@ -1,5 +1,7 @@
-# Git to Toggle
-Git to Toggle is a post commit git hook that takes commit message and adds it to the description of the running time entry in Toggl.
+![Git to Toggl](https://raw.githubusercontent.com/DJakosa/git-to-toggl/master/image.png)
+
+# Git to Toggl
+Git to Toggl is a post commit git hook that takes commit message and adds it to the description of the running time entry in [Toggl](https://www.toggl.com/).
 
 ## Prerequisite
 * [jq command-line JSON processor](https://stedolan.github.io/jq/)
