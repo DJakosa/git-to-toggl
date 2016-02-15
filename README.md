@@ -2,7 +2,7 @@
 Git to Toggle is a post commit git hook that takes commit message and adds it to the description of the running time entry in Toggl.
 
 ## Prerequisite
-* jq command-line JSON processor [a link](https://stedolan.github.io/jq/)
+* [jq command-line JSON processor](https://stedolan.github.io/jq/)
 
 ## How to use it
 * Put the post-commit file to the `.git/hooks` folder of your local repository.
