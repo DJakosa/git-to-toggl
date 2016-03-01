@@ -2,6 +2,7 @@
 
 # Git to Toggl post-commit hook.
 # Created by Denis Jakoša <denisjakosa@gmail.com>
+# Modified by Tomaz Kramberger <tomazkramberger@gmail.com>
 
 # Add your Toggl API key here
 API_KEY=""
@@ -20,20 +21,27 @@ else
 	
 	# Get the id of the running task
 	RUNNING_ID=$(cat gittoggl.json | jq '.data.id')
-	#echo "Running task has id $RUNNING_ID"
-	
-	# Append commit message to the description
-	NEW_DESCRIPTION=$(cat gittoggl.json | jq '.data.description' | tr -d '"')
-	NEW_DESCRIPTION="$NEW_DESCRIPTION; $MESSAGE"
-	#echo "New task description: $NEW_DESCRIPTION"	
-	
+
+	# Create new task if it is not running yet
+	if [[ "$RUNNING_ID" -eq "null" ]]; then
+		curl -s -u $API_KEY:api_token \
+	        -H "Content-Type: application/json" \
+	        -d '{"time_entry":{"description":"'${MESSAGE}'","duration":0,"start":"'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'", "created_with":"curl"}}' \
+	        -X POST https://www.toggl.com/api/v8/time_entries/start > gittoggl.json
+	    RUNNING_ID=$(cat gittoggl.json | jq '.data.id')
+	    NEW_DESCRIPTION="$MESSAGE"
+	else
+		# Append commit message to the description
+		NEW_DESCRIPTION=$(cat gittoggl.json | jq '.data.description' | tr -d '"')
+		NEW_DESCRIPTION="$NEW_DESCRIPTION; $MESSAGE"
+	fi
+
 	# Remove tmp file
 	rm gittoggl.json	
 
 	# Build JSON for update
 	UPDATED_TIME_ENTRY="$(jq -n --arg ARG "$NEW_DESCRIPTION" '{time_entry: {description: $ARG} }')"
-	#echo "Updated time entry is: '$UPDATED_TIME_ENTRY'"
-	
+
 	# Update description
 	curl -s -u $API_KEY:api_token \
    		-H "Content-Type: application/json" \
